@@ -12,10 +12,8 @@
 ## 利用例
 
 ```
-    ' 必要に応じてMeCabのパスを指定してください
-    ' デフォルトのパスにインストールしてあれば指定は不要
-    ' SetMeCabPath("C:\...")
-    
+Sub 形態素解析のテスト()
+
     ' MeCabインストール時の辞書文字コードを指定
     Call SetMeCabCharset("Shift_JIS")
     
@@ -24,15 +22,18 @@
     
     ' 文字列として結果を得る
     MsgBox MeCabExec(TestStr)
-    
+        
+    ' シートに結果を入れる
+    MeCabExecToSheet TestStr, Sheet1, 1
+
     ' MeCabItem配列に結果を得る
     Dim items() As MeCabItem
     items = MeCabExecToItems(TestStr)
-    Debug.Print items(0).表層形
-    Debug.Print items(0).ヨミ
-    
-    ' シートに結果を入れる
-    MeCabExecToSheet TestStr, Sheet1, 1
+    For i = 0 To UBound(items)
+        Debug.Print items(i).表層形, items(i).ヨミ
+    Next
+
+End Sub
 ```
 
 

@@ -25,7 +25,6 @@ Public Type MeCabItem
     発音 As String
 End Type
 
-
 Public Sub SetMeCabPath(ByVal Path)
     MeCabPath = Path
 End Sub
@@ -66,52 +65,65 @@ Public Sub MeCabExecToSheet(ByVal InText As String, ByRef Sheet As Worksheet, By
     Dim Res As String
     Res = MeCabExec(InText)
     If Res = "" Then Exit Sub
-    Dim Lines, y, x
+    Dim Lines, y, x, row As Integer
+    ' On Error GoTo ERR_OVERFLOW
+    row = Top
     Lines = Split(Res, vbCrLf)
     For y = 0 To UBound(Lines)
         Dim Line As String
         Line = Lines(y)
+        If Line = "" Then GoTo Y_CONTINUE
         
         Dim Tabs
         Tabs = Split(Line, Chr(9))
-        If UBound(Tabs) = 0 Then Exit For
+        If UBound(Tabs) = 0 Then
+            DoEvents
+            GoTo Y_CONTINUE
+        End If
         Dim Word, Desc
         Word = Tabs(0)
         Desc = Tabs(1)
         
         Dim Cm
         Cm = Split(Desc, ",")
-        If UBound(Cm) < 8 Then Exit For
-        
-        Dim row
-        row = y + Top
-        
+        If UBound(Cm) < 8 Then GoTo Y_CONTINUE
+                
         Sheet.Cells(row, 1) = Word
         For x = 0 To UBound(Cm)
             Sheet.Cells(row, 2 + x) = Cm(x)
         Next
+        row = row + 1
+Y_CONTINUE:
     Next
+    Exit Sub
+ERR_OVERFLOW:
+    Debug.Print "[MeCabExecToSheet] " & Err.Description & " : " & row & "行目でエラー"
 End Sub
 
 
 Public Function MeCabExecToItems(ByVal InText As String) As MeCabItem()
     Dim Res As String
     Res = Trim(MeCabExec(InText))
-    Dim a, i
-    a = Split(Res, vbCrLf)
+    Dim i, Lines, Line, Cm, Word, Desc, da, wa
+    Lines = Split(Res, vbCrLf)
     Dim items() As MeCabItem
-    ReDim items(UBound(a) + 1)
-    For i = 0 To UBound(a)
-        If a(i) = "" Then Exit For
-        Dim rowa, Word, Desc, da
-        ' tab
-        rowa = Split(a(0), Chr(9))
-        If UBound(rowa) = 0 Then Exit For
-        Word = rowa(0)
-        Desc = rowa(1)
-        ' comma : 品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用型,活用形,原形,読み,発音
+    ReDim items(UBound(Lines) + 1)
+    For i = 0 To UBound(Lines)
+        ' 行を得る
+        Line = Lines(i)
+        If Line = "" Then GoTo I_CONTINUE
+        ' タブで区切る
+        wa = Split(Line, Chr(9))
+        If UBound(wa) = 0 Then
+            DoEvents
+            GoTo I_CONTINUE
+        End If
+        Word = wa(0)
+        Desc = wa(1)
+        ' カンマで区切る
         da = Split(Desc, ",")
-        If UBound(da) < 8 Then Exit For
+        If UBound(da) < 8 Then GoTo I_CONTINUE
+        ' comma : 品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用型,活用形,原形,読み,発音
         items(i).表層形 = Word
         items(i).品詞 = da(0)
         items(i).品詞詳細1 = da(1)
@@ -122,6 +134,7 @@ Public Function MeCabExecToItems(ByVal InText As String) As MeCabItem()
         items(i).原形 = da(6)
         items(i).ヨミ = da(7)
         items(i).発音 = da(8)
+I_CONTINUE:
     Next
     MeCabExecToItems = items
 End Function
